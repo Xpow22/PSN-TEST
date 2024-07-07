@@ -1,6 +1,15 @@
-import '@/styles/globals.css'
-import type { AppProps } from 'next/app'
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
+import '../styles/globals.css'; 
+import { AuthProvider } from '../context/AuthContext';
+import { AppProps } from 'next/app';
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+function MyApp({ Component, pageProps }: AppProps) {
+    return (
+        <AuthProvider>
+            <Component {...pageProps} />
+        </AuthProvider>
+    );
 }
+
+export default MyApp;

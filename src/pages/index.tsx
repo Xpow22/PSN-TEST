@@ -1,118 +1,158 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import React, { useState, useEffect } from 'react';
+import { fetchComments, deleteComment, createComment } from '@/service/comment';
+import { Comment } from '@/types/comment';
+import Card from '@/components/Card';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import Modal from '@/components/Modal';
+import { Button } from 'primereact/button';
+import withAuth from '@/utils/withAuth';
+import { Toaster, toast } from 'react-hot-toast';
+import { InputText } from 'primereact/inputtext';
+import Navbar from '@/components/Navbar';
 
-const inter = Inter({ subsets: ['latin'] })
+const Index = () => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [filteredComments, setFilteredComments] = useState<Comment[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-export default function Home() {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchComments();
+        setComments(data);
+        setFilteredComments(data);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSearch = (query: string) => {
+    const lowerCaseQuery = query.toLowerCase();
+    const filteredData = comments.filter(
+      (comment) =>
+        comment.name.toLowerCase().includes(lowerCaseQuery) ||
+        comment.email.toLowerCase().includes(lowerCaseQuery) ||
+        comment.body.toLowerCase().includes(lowerCaseQuery)
+    );
+    setFilteredComments(filteredData);
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await deleteComment(commentId);
+      const updatedComments = comments.filter((comment) => comment.id !== commentId);
+      setComments(updatedComments);
+      setFilteredComments(updatedComments.filter(
+        (comment) =>
+          comment.name.toLowerCase().includes(searchTerm) ||
+          comment.email.toLowerCase().includes(searchTerm) ||
+          comment.body.toLowerCase().includes(searchTerm)
+      ));
+      toast.success('Comment deleted successfully');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast.error('Failed to delete comment');
+    }
+  };
+
+  const confirmDelete = (commentId: number) => {
+    confirmDialog({
+      message: 'Are you sure you want to delete this comment?',
+      header: 'Confirmation',
+      acceptClassName: 'p-button p-button-danger mt-4 mx-2', 
+      acceptLabel: 'Yes',
+      rejectClassName: 'p-button p-button-text mt-4 mx-2', 
+      rejectLabel: 'No', 
+      contentClassName: 'text-center',
+      accept: () => handleDeleteComment(commentId),
+      reject: () => {
+        toast('You have rejected', {
+          icon: '⚠️',
+        });
+      }
+    });
+  };
+
+  const handleCreateComment = async (values: { name: string; email: string; body: string }) => {
+    const newComment = {
+      postId: 1,
+      id: 0,
+      name: values.name,
+      email: values.email,
+      body: values.body
+    };
+    try {
+      const createdComment = await createComment(newComment);
+      setComments([createdComment, ...comments]);
+      setFilteredComments([createdComment, ...comments].filter(
+        (comment) =>
+          comment.name.toLowerCase().includes(searchTerm) ||
+          comment.email.toLowerCase().includes(searchTerm) ||
+          comment.body.toLowerCase().includes(searchTerm)
+      ));
+      setIsModalOpen(false);
+      toast.success('Comment created successfully');
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      toast.error('Failed to create comment');
+    }
+  };
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <>
+      <Navbar />
+      <div className="mx-auto p-8">
+        <Toaster />
+        <h1 className="text-3xl font-semibold mb-8">Comments</h1>
+        <div className="flex justify-between items-center mb-4">
+        <Button
+            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded focus:outline-none"
+            onClick={() => setIsModalOpen(true)}
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+            Create Comment
+          </Button>
+          <form onSubmit={(e) => { e.preventDefault(); handleSearch(searchTerm); }} className="flex">
+            <InputText
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by Name, Email, or Body"
+              className="px-4 py-2 border rounded-l-md focus:outline-none"
             />
-          </a>
+            <Button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-r-md focus:outline-none"
+            >
+              Search
+            </Button>
+          </form>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredComments.map((comment) => (
+            <Card key={comment.id} comment={comment} onDelete={() => confirmDelete(comment.id)} />
+          ))}
+        </div>
+        <ConfirmDialog
+          style={{
+            width: '50vw', 
+            backgroundColor: 'white', 
+            borderRadius: '8px', 
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', 
+            padding: '20px', 
+            fontSize: '16px', 
+          }}
+          breakpoints={{
+            '1100px': '75vw',
+            '960px': '100vw', 
+          }}
         />
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateComment} />
       </div>
+    </>
+  );
+};
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
-}
+export default withAuth(Index);
