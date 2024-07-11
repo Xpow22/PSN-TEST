@@ -56,19 +56,24 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <div className="bg-gradient-to-r from-purple-400 to-indigo-500 p-4 flex justify-end items-end"> 
+    <div className="bg-gradient-to-r from-purple-400 to-indigo-500 p-4 flex justify-end items-end shadow-lg">
       <div className="relative">
         <Button
-          className="flex items-center border-none space-x-2 bg-transparent"
+          className="flex items-center space-x-2 bg-white text-purple-700 rounded-md shadow-md hover:bg-purple-100 transition-colors duration-200"
           onClick={toggleDropdown}
         >
           <div className="flex flex-col items-center space-x-2">
-            <h4 className="text-xl">{`${greeting}, ${username}`}</h4>
+            <h4 className="text-xl font-semibold">{`${greeting}, ${username}`}</h4>
             <p className="text-base">{getCurrentDate()}</p>
           </div>
           <i className="pi pi-chevron-down"></i>
         </Button>
-        <Menu model={items} popup ref={menu} />
+        <Menu
+          model={items}
+          popup
+          ref={menu}
+          className="mt-4 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+        />
       </div>
     </div>
   );
