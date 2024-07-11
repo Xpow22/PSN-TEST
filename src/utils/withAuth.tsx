@@ -3,7 +3,7 @@ import Router from 'next/router';
 import { NextPage } from 'next';
 
 const withAuth = (WrappedComponent: NextPage) => {
-    return (props: JSX.IntrinsicAttributes) => {
+    const ComponentWithAuth = (props: JSX.IntrinsicAttributes) => {
         useEffect(() => {
             const userData = localStorage.getItem('isAuthenticated');
             if (!userData) {
@@ -13,6 +13,10 @@ const withAuth = (WrappedComponent: NextPage) => {
 
         return <WrappedComponent {...props} />;
     };
+
+    ComponentWithAuth.displayName = `WithAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+
+    return ComponentWithAuth;
 };
 
 export default withAuth;

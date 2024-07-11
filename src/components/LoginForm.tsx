@@ -73,7 +73,7 @@ const LoginForm: React.FC = () => {
                     {error && <div className="text-red-500 text-center">{error}</div>}
                     <Button type="submit" label="Login" className="w-24 border bg-purple-400 text-white rounded-lg" disabled={submitting} />
                     <div>
-                        Don't have an account?{' '}
+                        Dont have an account?{''}
                         <Link href="/register" className="text-yellow-400">
                             Register
                         </Link>
